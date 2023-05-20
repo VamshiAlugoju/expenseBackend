@@ -8,7 +8,7 @@ function generateToken(id) {
 }
 
 
-exports.postUser = async (req, res, next) => {
+exports.SignUP = async (req, res, next) => {
   const { name, email, password } = req.body;
   try {
     if (
@@ -20,6 +20,7 @@ exports.postUser = async (req, res, next) => {
     }
 
     bcrypt.hash(password, 10, async (err, hash) => {
+
       const result = await User.create({
         name,
         email,
@@ -39,19 +40,19 @@ exports.loginUser = async (req, res, next) => {
   if (isinvalidString(email) || isinvalidString(password)) {
     return res.status(400).send("please fill the fields");
   }
-  console.log(">>>>>>>>>>>.user><<<<<<<<<<<<<")
-  try {
-    let user = await User.findOne({ where: { email: email } });
 
-    
+  try {
+    let user = await User.find({email});
+
+   
     if (user) {
-      bcrypt.compare(password, user.password, (err, result) => {
+      bcrypt.compare(password, user[0].password, (err, result) => {
         if (err) throw new Error("something went wrong");
 
         if (result)
           res.send({
             message: "logged in successfully",
-            token: generateToken(user.id),
+            token: generateToken(user[0]._id),
           });
         else {
           res.status(401).send({ message: "password is not matching" });

@@ -1,6 +1,6 @@
 const Expense =  require("../models/expense");
-const LeaderBoard = require("../models/leaderBoard");
-const sequelize = require("../util/database");
+const User = require("../models/user");
+const ForgetHistory = require("../models/ReportHistory");
 const Aws = require("aws-sdk");
 require('dotenv').config();
 
@@ -46,13 +46,14 @@ function uploadToS3(filename,data)
 exports.downloadReport = async(req,res)=>{
 
     try{
-
-        let expenses = await Expense.findAll({where:{userID:req.user.id}})
+        
+        let expenses = await Expense.find({userId:req.user._id})
         expenses = JSON.stringify(expenses);
-        console.log(expenses);
+
         let fileName = `Expense${req.user.id}${new Date()}.txt`;
         let location = await uploadToS3(fileName,expenses);
-        await req.user.createForgotHistory({location});
+
+        await ForgetHistory.create({location,userId:req.user._id})
         res.json({fileURL:location});
     }
     catch(err){
@@ -62,10 +63,10 @@ exports.downloadReport = async(req,res)=>{
 
 exports.getExpenses = async(req,res,next)=>{
 
-    const Id = req.user.id;
+    const Id = req.user._id;
     const page = parseInt(req.query.page)
     let totalItems;
-    let limitPerPage ;
+    let limitPerPage;
     if(req.query.limit)
     {
         limitPerPage = parseInt(req.query.limit)
@@ -74,16 +75,12 @@ exports.getExpenses = async(req,res,next)=>{
       limitPerPage = 2;
     
     try{
-      totalItems = await Expense.count({
-        where:{
-            userId:Id
-        }
-       })
+      let user = req.user;
+      totalItems = user.Expenses.length;
        totalItems = parseInt(totalItems);
-      let data = await Expense.findAll({where:{userid:Id},
-        offset:(page-1)*limitPerPage,
-        limit:limitPerPage
-    });
+       let data = await Expense.find({userId:user._id})
+       .limit(limitPerPage)
+       .skip((page-1)*limitPerPage);
       
       res.json({data,Pagination:{
          currentPage:page,
@@ -97,28 +94,30 @@ exports.getExpenses = async(req,res,next)=>{
     {
       res.send("no Items found add some");
     }
- 
 }   
 
 exports.postExpense = async(req,res,next)=>{
      
-    const t = await sequelize.transaction();
     const {amount,description,category} = req.body;
 
     if(isinvalidString(amount) || isinvalidString(description) || isinvalidString(category))
     {
         return res.status(500).json({message:"please enter fields"});
     }
-    let userId = req.user.id;
+    let userId = req.user._id;
     try{
-      let result = await   Expense.create({amount,description,category,userId},{transaction:t});
-      let TAmount = parseInt(req.user.TotalAmount)+parseInt(amount);
-      await req.user.update({TotalAmount:TAmount},{transaction:t}) 
-       await t.commit();
+        const result = await Expense.create({amount,description,category,userId})
+        console.log(result);
+        let TAmount = parseInt(req.user.TotalAmount) + parseInt(amount);
+        const user = await User.find({_id:userId})
+        user[0].TotalAmount = TAmount;
+        user[0].Expenses.push(result._id)
+        user[0].save();
+    
         res.json(result);
     }
     catch(err){
-       await t.rollback();
+     
         console.log(err)
        res.status(500).send({message:"cannot add items"});
     }
@@ -127,21 +126,21 @@ exports.postExpense = async(req,res,next)=>{
 
 exports.deleteExpense = async(req,res,next)=>{
     
-    const t = await sequelize.transaction()
+    // const t = await sequelize.transaction()
     const Id = req.params.Id
-    let userId = req.user.id;
+    let user = req.user;
+    let userId = user._id;
     try{
-        let data = await Expense.findOne({where:{id:Id}})
-
-        deleteAmount =  parseInt(req.user.TotalAmount) - parseInt(data.amount);
-        await req.user.update({TotalAmount:deleteAmount},{transaction:t});
+        let data = await Expense.find({_id:Id});
+        deleteAmount =  parseInt(user.TotalAmount) - parseInt(data[0].amount);
         
-        await Expense.destroy({where:{id:Id},transaction:t})
-       await t.commit();
+        user.TotalAmount = deleteAmount;
+        await user.save();
+        await Expense.deleteOne({_id:Id});
         res.send("deleted");
     }
     catch(err){
-        await t.rollback();
+        // await t.rollback();
         console.log(err)
         res.status(500).send("cannot delete item");
     }

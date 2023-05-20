@@ -1,18 +1,13 @@
-const S = require("sequelize");
-const sequelize = require("../util/database");
+const mongoose = require("mongoose");
 
-const ForgotHistory = sequelize.define("ForgotHistory",{
-    id:{
-        type:S.INTEGER,
-        primaryKey:true,
-        NotNull:true,
-        autoIncrement:true
-    },
-    location:{
-        type:S.STRING
-    }
+const ForgetSchema = new mongoose.Schema({
+    location:String,
+    userId:mongoose.Types.ObjectId
 })
 
-module.exports = ForgotHistory;
+const ForgetHistory = mongoose.model("ForgetHistory" , ForgetSchema);
+
+module.exports = ForgetHistory;
+  
 
 

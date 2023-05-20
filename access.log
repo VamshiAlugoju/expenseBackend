@@ -40,3 +40,6 @@
 ::1 - - [03/May/2023:05:42:58 +0000] "GET /Expenses/?page=1&limit=10 HTTP/1.1" 200 867 "http://127.0.0.1:5500/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
 ::1 - - [03/May/2023:05:42:59 +0000] "GET /users/ispremium HTTP/1.1" 304 - "http://127.0.0.1:5500/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
 ::1 - - [03/May/2023:05:43:06 +0000] "POST /Expenses HTTP/1.1" 200 152 "http://127.0.0.1:5500/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
+::1 - - [03/May/2023:08:06:54 +0000] "GET / HTTP/1.1" 404 139 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
+::1 - - [03/May/2023:08:07:37 +0000] "GET /Expenses/ HTTP/1.1" 401 17 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
+::1 - - [03/May/2023:08:07:38 +0000] "GET /favicon.ico HTTP/1.1" 404 150 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"

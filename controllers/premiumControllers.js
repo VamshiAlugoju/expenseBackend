@@ -2,7 +2,7 @@
 const Order = require("../models/order");
 const User = require("../models/user");
 const Razorpay = require("razorpay");
-const LBoard = require("../models/leaderBoard");
+
 require("dotenv").config();
 
 
@@ -13,25 +13,18 @@ exports.getOrderID = async (req,res)=>{
         key_id:process.env.RAZORPAY_KEY_ID,
         key_secret:process.env.RAZORPAY_KEY_SECRET
     })
-     
+    const user = req.user;
     const amount  = 2500;
 
     try{
-        rzp.orders.create({amount,currency:"INR"},(err,order)=>{
+        rzp.orders.create({amount,currency:"INR"}, async(err,order)=>{
              if(err)
              {  
                 console.log("err is " , err)
                 throw new Error("this is seror");
              }
-             console.log(err ,"and" , order)  
-             req.user.createOrder({orderId:order.id,status:"pending"})
-             .then(()=>{
-               return res.status(201).json({order,key_id:rzp.key_id});
-             })
-             .catch(err=>{
-                throw new Error(err)
-             })
-            // res.send("ok")
+             let order_instance = await Order.create({orderId:order.id , status:"pending",userId:user._id});
+             res.status(201).json({order,key_id:rzp.key_id});
         })
     }
     catch(err){
@@ -43,34 +36,43 @@ exports.getOrderID = async (req,res)=>{
 exports.updateTransactionStatus = async (req,res)=>{
       
     const {order_id,payment_id} = req.body;
+    const user = req.user;
+  
     try{
-        let order = await Order.findOne({where:{orderId:order_id}});
-        if(!order)
+        let order = await Order.find({orderId:order_id});
+         
+        console.log(order)
+        if(!order[0])
           throw new Error("invalid order id");
         
-        await order.update({paymentId:payment_id,status:"success"});
+        order[0].paymentId = payment_id;
+        await order[0].save();
 
-        await req.user.update({ispremiumUser:true});
+        user.isPremiumUser = true;
+        await user.save()
 
         res.status(200).json("payment successfull");
     }
     catch(err)
-    {
+    {   
+      console.log(err)
        res.status(401).json(JSON.stringify(err));
     }
 }
-
 
 exports.StatusFail = async (req,res)=>{
 
     try{
         let {order_id} = req.body;
-        let order = await Order.findOne({where:{orderId:order_id}});
-        if(!order)
+        let order = await Order.find({orderId:order_id});
+
+        if(!order[0])
           throw new Error("invalid order id");
         
-        await order.update({status:"failed"});
-        await req.user.update({ispremiumUser:false});
+        order[0].status = "failed";
+        await order[0].save();
+        req.user.ispremiumUser = false;
+        req.user.save()
         res.status(201).json("payment was unsuccessfull");
     }
     catch(err){
@@ -81,13 +83,7 @@ exports.StatusFail = async (req,res)=>{
 
   exports.LeaderBoard = async (req,res)=>{
       
-    let data =  await User.findAll({
-      attributes:['name','TotalAmount'],
-      order: [
-        ['TotalAmount', 'DESC']
-      ]
-    })
+    let data = await User.find().sort({TotalAmount:-1})
      
-    
     res.json(data);
   }

@@ -1,16 +1,15 @@
 
-const Sequeilze = require("sequelize");
-const sequelize = require("../util/database");
+const mongoose = require("mongoose");
 
-const ForgotRequest = sequelize.define("forgotRequest",{
-    id:{
-        type:Sequeilze.STRING,
-        primaryKey:true,
-        NotNull:true
-    },
-    isActive:Sequeilze.BOOLEAN
+const ForgotRequestSchema = new mongoose.Schema({
+    _id:mongoose.Types.ObjectId,
+    isActive:{
+        type:Boolean,
+        default:false
+    }
 })
 
+const ForgotRequest = mongoose.model("ForgotRequest",ForgotRequestSchema);
 
 
 module.exports = ForgotRequest;
